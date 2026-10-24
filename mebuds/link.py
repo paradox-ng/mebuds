@@ -6,6 +6,7 @@ socket connect, which happen on a short-lived worker thread.
 
 from __future__ import annotations
 
+import logging
 import socket
 import threading
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ from .protocol import (
     Packet,
     StreamParser,
 )
+
+log = logging.getLogger(__name__)
 
 SPP_MIUI_UUID16 = 0xFD2D
 AUTH_TIMEOUT_MS = 6000
@@ -120,6 +123,7 @@ class Link(QObject):
                 p.callback(None)
 
     def _fail(self, reason: str):
+        log.info("link failed: %s", reason)
         self._teardown()
         self._set_state("disconnected")
         self.failed.emit(reason)
@@ -133,6 +137,7 @@ class Link(QObject):
     def _write(self, data: bytes):
         if self._sock is None:
             return
+        log.debug(">> %s", data.hex(" "))
         try:
             self._sock.sendall(data)
         except OSError as exc:
@@ -151,6 +156,7 @@ class Link(QObject):
         if not chunk:
             self._fail("connection closed by device")
             return
+        log.debug("<< %s", chunk.hex(" "))
         if self.state == "authenticating" and self._auth_mode == "raw":
             if not chunk.startswith(b"\xfe\xdc\xba"):
                 self._on_raw_auth(chunk)

@@ -3,6 +3,7 @@ running one's window; two copies would fight over the control channel."""
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 
@@ -18,6 +19,11 @@ def main() -> int:
     if "--version" in sys.argv or "-V" in sys.argv:
         print(f"mebuds {__version__}")
         return 0
+    if "--debug" in sys.argv:
+        # Logs every packet to stderr, for figuring out what the buds send.
+        logging.basicConfig(
+            level=logging.DEBUG, format="%(asctime)s %(name)s: %(message)s"
+        )
 
     app = QApplication(sys.argv)
     app.setApplicationName("mebuds")
