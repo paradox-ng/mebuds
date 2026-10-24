@@ -47,8 +47,7 @@ class BatteryCard(QFrame):
     def __init__(self, title: str, art: str, mirror: bool = False):
         super().__init__()
         self.art, self.mirror = art, mirror
-        self.setObjectName("card")  # styled by theme.py
-        self.setFrameShape(QFrame.StyledPanel)
+        self.setFrameShape(QFrame.NoFrame)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignHCenter)
         self.picture = QLabel(alignment=Qt.AlignHCenter)

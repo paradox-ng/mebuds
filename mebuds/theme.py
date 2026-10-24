@@ -23,7 +23,6 @@ class Colors:
     base: str
     alt_base: str
     button: str
-    card: str
     border: str
     disabled_text: str
     accent: str
@@ -34,13 +33,13 @@ class Colors:
 # Colours from KDE's Breeze and Breeze Dark schemes.
 LIGHT = Colors(
     window="#eff0f1", text="#232629", base="#ffffff", alt_base="#f7f7f7",
-    button="#fcfcfc", card="#fafafa", border="#bdc3c7",
+    button="#fcfcfc", border="#bdc3c7",
     disabled_text="#a0a4a8", accent="#3daee9", accent_text="#ffffff",
     link="#2980b9",
 )
 DARK = Colors(
     window="#202326", text="#fcfcfc", base="#141618", alt_base="#1d1f22",
-    button="#292c30", card="#272a2e", border="#3f4347",
+    button="#292c30", border="#3f4347",
     disabled_text="#70747a", accent="#3daee9", accent_text="#fcfcfc",
     link="#1d99f3",
 )
@@ -155,13 +154,6 @@ def _stylesheet(c: Colors) -> str:
         border-top: 2px solid {c.accent};
     }}
     QTabBar::tab:!selected:hover {{ color: {c.accent}; }}
-
-    QFrame#card {{
-        background: {c.card};
-        border: 1px solid {c.border};
-        border-radius: 10px;
-    }}
-    QFrame#card QLabel {{ background: transparent; }}
 
     QMenu {{
         background: {c.base};
