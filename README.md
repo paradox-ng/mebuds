@@ -66,10 +66,13 @@ Pair and connect the earbuds in your system's Bluetooth settings first, then:
 
 - **Linux:** make the AppImage executable and run it:
   `chmod +x mebuds-*.AppImage && ./mebuds-*.AppImage`. It uses BlueZ, the
-  standard Linux Bluetooth stack, and doesn't need root. To start it with your session,
-  add it in KDE's *System Settings → Autostart* with the `--hidden` argument,
-  so it starts in the tray without opening the window.
+  standard Linux Bluetooth stack, and doesn't need root.
 - **Windows:** extract the zip and run `mebuds\mebuds.exe`.
+
+To have it start when you log in, turn on *Start mebuds when you log in* in the
+Settings tab. By default it then starts in the tray without opening the window.
+If you start it some other way, `--hidden` does the same; `--help` lists the
+other options.
 
 ## Supported devices
 
