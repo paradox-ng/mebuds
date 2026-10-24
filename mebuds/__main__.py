@@ -20,6 +20,7 @@ Usage: mebuds [options]
 
   --hidden, --tray   start in the tray without opening the window
   --debug            log every packet exchanged with the earbuds
+  --native-style     use the desktop's widget style instead of mebuds' own
   -V, --version      print the version and exit
   -h, --help         show this help and exit
 
@@ -59,6 +60,11 @@ def main() -> int:
     QLocalServer.removeServer(SERVER_NAME)
     server = QLocalServer()
     server.listen(SERVER_NAME)
+
+    if "--native-style" not in sys.argv:
+        from . import theme
+
+        theme.apply(app)
 
     from .tray import App
 

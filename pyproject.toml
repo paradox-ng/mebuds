@@ -22,7 +22,7 @@ mebuds = "mebuds.__main__:main"
 packages = ["mebuds"]
 
 [tool.setuptools.package-data]
-mebuds = ["data/*.svg"]
+mebuds = ["data/*.svg", "data/ui/*.svg"]
 
 [tool.setuptools.dynamic]
 version = {attr = "mebuds.__version__"}
