@@ -1,0 +1,8 @@
+# The official APK is not ours to redistribute.
+*.apk
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+.venv/
