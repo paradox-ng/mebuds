@@ -39,12 +39,17 @@ The window has the rest:
 - rename, firmware version, serial number
 
 mebuds connects to the buds' control channel by itself when they connect to
-your computer, and lets go when they disconnect. It can warn you when an
-earbud's battery gets low.
+your computer, and lets go when they disconnect. It shows a notification with
+the battery levels when they connect, and can warn you when an earbud's battery
+gets low.
 
 It has its own look, based on KDE's Breeze, so it's the same on every system.
 It's light or dark following your system's setting. Start it with
 `--native-style` to use your desktop's widget style instead.
+
+It's available in English, Catalan, Spanish, French, German, Italian,
+Portuguese (Brazil), Russian and Simplified Chinese. It follows the system
+language, or you can pick one in Settings.
 
 The buds accept only one control connection at a time. While the Xiaomi app on
 your phone is connected to them, mebuds can't get in; it keeps retrying and
@@ -86,6 +91,30 @@ Settings tab. By default it then starts in the tray without opening the window.
 If you start it some other way, `--hidden` does the same; `--help` lists the
 other options.
 
+## Battery on the command line
+
+While mebuds is running, `mebuds --status` prints the battery levels and
+`mebuds --status --json` prints everything it knows. It asks the running copy,
+so it doesn't open another connection to the earbuds. It exits with 0 when the
+earbuds are connected, 2 when they aren't and 1 when mebuds isn't running.
+
+```
+$ mebuds --status
+PrdxBuds: L 100%  ·  Case 72%  ·  R 95%
+```
+
+That makes it easy to put the battery in a status bar. For Waybar:
+
+```json
+"custom/earbuds": {
+    "exec": "mebuds --status",
+    "interval": 60
+}
+```
+
+In KDE Plasma, the *Command Output* widget from the KDE Store can run the same
+command.
+
 ## Supported devices
 
 **I have only tested mebuds with my own REDMI Buds 8 Active (M2537E1).** Its
@@ -113,6 +142,16 @@ model: which audio presets, which gestures and the actions each one offers,
 dual connection, find earbuds. Starting mebuds with `--debug` logs every packet,
 which helps if your model needs something new. [docs/PROTOCOL.md](docs/PROTOCOL.md)
 describes the protocol.
+
+## Translations
+
+The translations live in `mebuds/data/i18n` as Qt `.ts` files, which you can
+edit in Qt Linguist or any text editor. No native speaker has checked them yet,
+so corrections are very welcome. After changing a translation, or the strings
+in the code, run `tools/update_translations.sh` to update the files and compile
+them. To start a new language, create its file with
+`pyside6-lupdate mebuds/*.py -ts mebuds/data/i18n/mebuds_<code>.ts`, fill it in,
+and run the script.
 
 ## Running from source
 
