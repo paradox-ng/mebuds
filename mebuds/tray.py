@@ -3,7 +3,7 @@ the device model to the window and tray menu."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSettings, QTimer
+from PySide6.QtCore import QObject, QSettings, QTimer
 from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
@@ -24,14 +24,18 @@ def _battery_text(label: str, b: Battery) -> str:
     return f"{label} {b.level}%" + (" ⚡" if b.charging else "")
 
 
-class App:
+class App(QObject):
     def __init__(self, app: QApplication, start_hidden: bool = False):
+        super().__init__()
         self.app = app
         self.settings = QSettings("mebuds", "mebuds")
         self.tray_visible = self.settings.value("tray_visible", True, type=bool)
         self.low_battery_notify = self.settings.value("low_battery_notify", True, type=bool)
+        self.connect_notify = self.settings.value("connect_notify", True, type=bool)
         self.address: str | None = self.settings.value("address", None)
         self.device: BudsDevice | None = None
+        # Whether this connection has been announced with a notification yet.
+        self._announced = False
 
         self.buds = Buds()
         self.buds.changed.connect(self._update_tray)
@@ -45,6 +49,8 @@ class App:
         self.window.renameRequested.connect(self._rename)
         self.window.trayVisibilityChanged.connect(self._set_tray_visible)
         self.window.lowBatteryNotifyChanged.connect(self._set_low_battery_notify)
+        self.window.connectNotifyChanged.connect(self._set_connect_notify)
+        self.window.languageChanged.connect(lambda code: self.settings.setValue("language", code))
         self.window.quitRequested.connect(self.app.quit)
 
         self.tray_supported = QSystemTrayIcon.isSystemTrayAvailable()
@@ -52,11 +58,13 @@ class App:
         self.menu = QMenu()
         self.tray.setContextMenu(self.menu)
         self.tray.activated.connect(self._on_tray_activated)
-        self.window.set_settings(self.tray_visible, self.tray_supported, self.low_battery_notify)
+        self.window.set_settings(self.tray_visible, self.tray_supported,
+                                 self.low_battery_notify, self.connect_notify,
+                                 self.settings.value("language", "", type=str))
         self.window.tray_available = self._tray_active()
         self.tray.setVisible(self._tray_active())
 
-        self.retry = QTimer()
+        self.retry = QTimer(self)
         self.retry.setSingleShot(True)
         self.retry.timeout.connect(self._ensure_link)
 
@@ -106,21 +114,35 @@ class App:
 
     def _on_buds_changed(self):
         s = self.buds.state
-        if s.connection == "disconnected" and self.device and self.device.connected:
-            if not self.retry.isActive():
+        if s.connection == "disconnected":
+            self._announced = False
+            if self.device and self.device.connected and not self.retry.isActive():
                 self.retry.start(RETRY_MS)
+        elif s.ready and not self._announced and (
+            s.left.level is not None or s.right.level is not None
+        ):
+            self._announced = True
+            self._announce()
 
     # ----- tray -----
+    def _name(self) -> str:
+        s = self.buds.state
+        return s.alias or s.name or s.model.name
+
+    def _battery_line(self) -> str:
+        """"L 100% ⚡  ·  Case 72%  ·  R 100%" for the tooltip and --status."""
+        s = self.buds.state
+        parts = [_battery_text(label, b) for label, b in
+                 ((self.tr("L"), s.left), (self.tr("Case"), s.case), (self.tr("R"), s.right))]
+        return "  ·  ".join(p for p in parts if p)
+
     def _update_tray(self):
         s = self.buds.state
-        name = s.alias or s.name or (self.device.name if self.device else "Earbuds")
         if s.ready:
             self.tray.setIcon(
                 tray_icon(s.left.level, s.right.level, s.left.charging, s.right.charging)
             )
-            parts = [_battery_text(lbl, b) for lbl, b in
-                     (("L", s.left), ("Case", s.case), ("R", s.right))]
-            self.tray.setToolTip(f"{name}\n" + "  ·  ".join(p for p in parts if p))
+            self.tray.setToolTip(f"{self._name()}\n{self._battery_line()}")
         else:
             self.tray.setIcon(tray_icon(None, None, connected=False))
             tip = f"mebuds\n{self._status_text()}"
@@ -129,27 +151,37 @@ class App:
             self.tray.setToolTip(tip)
         self._rebuild_menu()
 
+    def _status_key(self) -> str:
+        if self.buds.state.ready:
+            return "connected"
+        if self.device is None:
+            return "no_paired_earbuds"
+        if not self.device.connected:
+            return "disconnected"
+        if self.buds.state.connection in ("connecting", "authenticating"):
+            return "connecting"
+        return "unreachable"
+
     def _status_text(self) -> str:
         """What to show instead of the earbuds' name while they aren't
         connected to mebuds."""
-        if self.device is None:
-            return "No paired Xiaomi earbuds"
-        if not self.device.connected:
-            return "No earbuds connected"
-        if self.buds.state.connection in ("connecting", "authenticating"):
-            return "Connecting to earbuds…"
-        return "Can't reach the earbuds"
+        return {
+            "no_paired_earbuds": self.tr("No paired Xiaomi earbuds"),
+            "disconnected": self.tr("No earbuds connected"),
+            "connecting": self.tr("Connecting to earbuds…"),
+            "unreachable": self.tr("Can't reach the earbuds"),
+        }.get(self._status_key(), "")
 
     def _rebuild_menu(self):
         self.menu.clear()
         s = self.buds.state
         model = s.model
-        name = (s.alias or s.name or model.name) if s.ready else self._status_text()
-        header = QAction(name, self.menu)
+        header = QAction(self._name() if s.ready else self._status_text(), self.menu)
         header.setEnabled(False)
         self.menu.addAction(header)
         if s.ready:
-            for label, b in (("Left", s.left), ("Case", s.case), ("Right", s.right)):
+            for label, b in ((self.tr("Left"), s.left), (self.tr("Case"), s.case),
+                             (self.tr("Right"), s.right)):
                 text = _battery_text(label, b)
                 if text:
                     a = QAction(text, self.menu)
@@ -157,38 +189,39 @@ class App:
                     self.menu.addAction(a)
             self.menu.addSeparator()
             if model.eq_presets:
-                eq_menu = self.menu.addMenu("Audio balance")
+                eq_menu = self.menu.addMenu(self.tr("Audio balance"))
                 group = QActionGroup(eq_menu)
                 current = s.byte(F.CFG_EQ_PRESET)
                 for p in model.eq_presets:
-                    a = QAction(F.EQ_PRESET_NAMES.get(p, f"Preset {p}"), eq_menu, checkable=True)
+                    a = QAction(F.preset_name(p), eq_menu, checkable=True)
                     a.setChecked(p == current)
                     a.triggered.connect(lambda _=False, p=p: self.buds.set_eq_preset(p))
                     group.addAction(a)
                     eq_menu.addAction(a)
             if model.dual_connection:
-                a = QAction("Dual connection", self.menu, checkable=True)
+                a = QAction(self.tr("Dual connection"), self.menu, checkable=True)
                 a.setChecked(bool(s.flag(F.CFG_DUAL_CONNECTION)))
                 a.toggled.connect(lambda on: self.buds.set_flag(F.CFG_DUAL_CONNECTION, on))
                 self.menu.addAction(a)
             if model.find_buds:
-                find = self.menu.addMenu("Find earbuds")
-                for text, side in (("Ring left", F.SIDE_LEFT), ("Ring both", F.SIDE_BOTH),
-                                   ("Ring right", F.SIDE_RIGHT)):
+                find = self.menu.addMenu(self.tr("Find earbuds"))
+                for text, side in ((self.tr("Ring left"), F.SIDE_LEFT),
+                                   (self.tr("Ring both"), F.SIDE_BOTH),
+                                   (self.tr("Ring right"), F.SIDE_RIGHT)):
                     a = QAction(text, find)
                     a.triggered.connect(lambda _=False, sd=side: self.buds.find_buds(True, sd))
                     find.addAction(a)
-                stop = QAction("Stop", find)
+                stop = QAction(self.tr("Stop"), find)
                 stop.triggered.connect(lambda: self.buds.find_buds(False))
                 find.addAction(stop)
         self.menu.addSeparator()
-        open_action = QAction("Open", self.menu)
+        open_action = QAction(self.tr("Open"), self.menu)
         open_action.triggered.connect(self.open_window)
         self.menu.addAction(open_action)
-        about_action = QAction("About", self.menu)
+        about_action = QAction(self.tr("About"), self.menu)
         about_action.triggered.connect(self.window.show_about)
         self.menu.addAction(about_action)
-        quit_action = QAction("Quit", self.menu)
+        quit_action = QAction(self.tr("Quit"), self.menu)
         quit_action.triggered.connect(self.app.quit)
         self.menu.addAction(quit_action)
 
@@ -204,20 +237,58 @@ class App:
         self.window.raise_()
         self.window.activateWindow()
 
-    # ----- actions -----
-    def _on_battery_low(self, level: int, side: str):
-        if self.low_battery_notify and self._tray_active():
+    # ----- status for `mebuds --status` -----
+    def status(self) -> dict:
+        s = self.buds.state
+
+        def battery(b: Battery):
+            return None if b.level is None else {"level": b.level, "charging": b.charging}
+
+        info = {
+            "status": self._status_key(),
+            "connected": s.ready,
+            "text": (f"{self._name()}: {self._battery_line()}" if s.ready
+                     else self._status_text()),
+        }
+        if s.ready:
+            wear = s.wear()
+            info.update(
+                name=self._name(),
+                model=None if s.model is F.UNKNOWN_MODEL else s.model.name,
+                left=battery(s.left),
+                case=battery(s.case),
+                right=battery(s.right),
+                left_in_ear=wear["left_in_ear"],
+                right_in_ear=wear["right_in_ear"],
+                firmware=s.firmware or None,
+            )
+        return info
+
+    # ----- notifications -----
+    def _announce(self):
+        if self.connect_notify and self._tray_active():
             self.tray.showMessage(
-                "Earbud battery low",
-                f"The {side} earbud is at {level}%.",
-                QSystemTrayIcon.Warning,
-                8000,
+                self.tr("{name} connected").format(name=self._name()),
+                self._battery_line(),
+                tray_icon(self.buds.state.left.level, self.buds.state.right.level),
+                5000,
             )
 
+    def _on_battery_low(self, level: int, side: str):
+        if self.low_battery_notify and self._tray_active():
+            if side == "left":
+                text = self.tr("The left earbud is at {level}%.").format(level=level)
+            else:
+                text = self.tr("The right earbud is at {level}%.").format(level=level)
+            self.tray.showMessage(
+                self.tr("Earbud battery low"), text, QSystemTrayIcon.Warning, 8000
+            )
+
+    # ----- settings -----
     def _rename(self, name: str):
         if not self.address or not self.bluez.rename(self.address, name):
-            QMessageBox.warning(self.window, "Rename failed",
-                                "BlueZ didn't accept the new name.")
+            QMessageBox.warning(self.window, self.tr("Rename failed"),
+                                self.tr("The system didn't accept the new name."))
 
     def _set_tray_visible(self, visible: bool):
         self.tray_visible = visible
@@ -230,3 +301,7 @@ class App:
     def _set_low_battery_notify(self, on: bool):
         self.low_battery_notify = on
         self.settings.setValue("low_battery_notify", on)
+
+    def _set_connect_notify(self, on: bool):
+        self.connect_notify = on
+        self.settings.setValue("connect_notify", on)
