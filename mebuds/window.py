@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QMessageBox,
     QPushButton,
     QSlider,
     QTabWidget,
@@ -20,9 +21,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from . import autostart
 from . import features as F
-from .device import Battery, Buds, BudsState
 from .about import AboutDialog
+from .device import Battery, Buds, BudsState
 from .icons import app_icon, art_pixmap, battery_pixmap
 
 EQ_SEND_DELAY_MS = 300
@@ -349,6 +351,21 @@ class ControlWindow(QWidget):
         self.lowbat_check.toggled.connect(self.lowBatteryNotifyChanged)
         layout.addWidget(self.tray_check)
         layout.addWidget(self.lowbat_check)
+
+        self.autostart_check = QCheckBox("Start mebuds when you log in")
+        self.autostart_hidden_check = QCheckBox("Start in the tray, without opening the window")
+        self.autostart_hidden_check.setContentsMargins(24, 0, 0, 0)
+        hidden_row = QHBoxLayout()
+        hidden_row.setContentsMargins(24, 0, 0, 0)
+        hidden_row.addWidget(self.autostart_hidden_check)
+        self.autostart_check.setChecked(autostart.is_enabled())
+        self.autostart_hidden_check.setChecked(autostart.starts_hidden())
+        self.autostart_hidden_check.setEnabled(self.autostart_check.isChecked())
+        self.autostart_check.toggled.connect(self._on_autostart)
+        self.autostart_hidden_check.toggled.connect(self._on_autostart)
+        layout.addWidget(self.autostart_check)
+        layout.addLayout(hidden_row)
+
         layout.addStretch()
         about = QPushButton("About mebuds")
         about.clicked.connect(self.show_about)
@@ -360,6 +377,14 @@ class ControlWindow(QWidget):
 
     def show_about(self):
         AboutDialog(self).exec()
+
+    def _on_autostart(self):
+        enabled = self.autostart_check.isChecked()
+        self.autostart_hidden_check.setEnabled(enabled)
+        try:
+            autostart.set_enabled(enabled, self.autostart_hidden_check.isChecked())
+        except OSError as exc:
+            QMessageBox.warning(self, "Autostart", f"Couldn't change autostart:\n{exc}")
 
     # ----- state -> widgets -----
     def set_settings(self, tray_visible: bool, tray_supported: bool, low_battery: bool):
