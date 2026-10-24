@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QByteArray, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
@@ -119,9 +119,27 @@ def battery_pixmap(level: int | None, charging: bool, size: int,
     return pm
 
 
+# The drawings' light-theme colours (see tools/gen_art.py) and what they
+# become on a dark theme, so the outlines don't vanish into the background.
+_DARK_SWAP = {
+    "#232629": "#eff0f1",  # outline
+    "#eceef0": "#3e444a",  # fill
+    "#cbcfd4": "#30353a",  # shading
+    "#9da2a8": "#70777e",  # speaker / case interior
+}
+
+
+def _is_dark_theme() -> bool:
+    return QApplication.palette().color(QPalette.Window).lightness() < 128
+
+
 def art_pixmap(name: str, size: int, device_pixel_ratio: float = 1.0,
                mirror: bool = False, dimmed: bool = False) -> QPixmap:
     """Render one of the SVG drawings in data/ (earbud, case, mebuds)."""
+    svg = (DATA / f"{name}.svg").read_text()
+    if _is_dark_theme():
+        for light, dark in _DARK_SWAP.items():
+            svg = svg.replace(light, dark)
     px = int(size * device_pixel_ratio)
     pm = QPixmap(px, px)
     pm.setDevicePixelRatio(device_pixel_ratio)
@@ -133,7 +151,7 @@ def art_pixmap(name: str, size: int, device_pixel_ratio: float = 1.0,
     if mirror:
         p.translate(size, 0)
         p.scale(-1, 1)
-    QSvgRenderer(str(DATA / f"{name}.svg")).render(p, QRectF(0, 0, size, size))
+    QSvgRenderer(QByteArray(svg.encode())).render(p, QRectF(0, 0, size, size))
     p.end()
     return pm
 

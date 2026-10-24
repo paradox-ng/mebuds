@@ -187,9 +187,10 @@ class ControlWindow(QWidget):
         root.addLayout(header)
 
         # --- batteries ---
-        self.left_card = BatteryCard("Left", "earbud")
+        # The drawing is the right earbud; the left one is its mirror image.
+        self.left_card = BatteryCard("Left", "earbud", mirror=True)
         self.case_card = BatteryCard("Case", "case")
-        self.right_card = BatteryCard("Right", "earbud", mirror=True)
+        self.right_card = BatteryCard("Right", "earbud")
         cards = QHBoxLayout()
         for c in (self.left_card, self.case_card, self.right_card):
             cards.addWidget(c)
