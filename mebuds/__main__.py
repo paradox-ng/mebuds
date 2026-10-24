@@ -14,8 +14,23 @@ from . import __version__
 
 SERVER_NAME = f"mebuds-{os.getuid()}" if hasattr(os, "getuid") else "mebuds"
 
+HELP = f"""mebuds {__version__} - control Xiaomi earbuds from the desktop
+
+Usage: mebuds [options]
+
+  --hidden, --tray   start in the tray without opening the window
+  --debug            log every packet exchanged with the earbuds
+  -V, --version      print the version and exit
+  -h, --help         show this help and exit
+
+Starting mebuds while it's already running opens the running copy's window.
+"""
+
 
 def main() -> int:
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(HELP, end="")
+        return 0
     if "--version" in sys.argv or "-V" in sys.argv:
         print(f"mebuds {__version__}")
         return 0
