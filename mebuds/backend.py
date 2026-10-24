@@ -40,6 +40,8 @@ def connect_control_channel(address: str) -> socket.socket:
         return connect_rfcomm(address)
     from . import sdp
 
+    if not hasattr(socket, "AF_BLUETOOTH"):
+        raise OSError("this Python was built without Bluetooth socket support")
     channel = sdp.rfcomm_channel(address, XIAOMI_SPP_UUID16)
     if channel is None:
         raise OSError("device has no Xiaomi (FD2D) RFCOMM service")

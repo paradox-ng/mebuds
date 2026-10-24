@@ -29,6 +29,31 @@ def test_windows_structures():
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Linux backend")
+def test_python_has_bluetooth_sockets():
+    # The Linux backend needs these; some prebuilt Pythons (including the
+    # one actions/setup-python installs) are compiled without them.
+    import socket
+
+    assert hasattr(socket, "AF_BLUETOOTH")
+    assert hasattr(socket, "BTPROTO_RFCOMM") and hasattr(socket, "BTPROTO_L2CAP")
+
+
+def test_connect_error_is_reported_not_swallowed(qapp, monkeypatch):
+    from mebuds import link as link_mod
+
+    def boom(address):
+        raise AttributeError("no AF_BLUETOOTH")
+
+    monkeypatch.setattr(link_mod, "connect_control_channel", boom)
+    results = []
+    link = link_mod.Link()
+    link._socketReady.disconnect()
+    link._socketReady.connect(lambda sock, err: results.append((sock, err)))
+    link._connect_worker("12:34:56:78:9A:BC")
+    assert results == [(None, "no AF_BLUETOOTH")]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Linux backend")
 def test_sdp_parser_finds_rfcomm_channel():
     from mebuds import sdp
 

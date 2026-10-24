@@ -144,6 +144,13 @@ def zip_dir(folder: Path, out: Path):
 
 
 def main():
+    if sys.platform.startswith("linux"):
+        import socket
+
+        if not hasattr(socket, "AF_BLUETOOTH"):
+            # The app would build fine and then never connect.
+            sys.exit("this Python has no Bluetooth socket support; build with "
+                     "a distribution Python (e.g. Debian/Ubuntu's python3)")
     shutil.rmtree(BUILD, ignore_errors=True)
     DIST.mkdir(exist_ok=True)
     png, ico = make_icons(BUILD / "icons")

@@ -77,7 +77,10 @@ class Link(QObject):
             sock = connect_control_channel(address)
             sock.setblocking(False)
             self._socketReady.emit(sock, "")
-        except OSError as exc:
+        # Anything escaping here would kill the thread silently and leave the
+        # app "connecting" forever, so report every error.
+        except Exception as exc:  # noqa: BLE001
+            log.warning("connect failed", exc_info=True)
             self._socketReady.emit(None, str(exc) or exc.__class__.__name__)
 
     def _on_socket_ready(self, sock: socket.socket | None, error: str):
