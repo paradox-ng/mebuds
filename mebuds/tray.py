@@ -123,22 +123,28 @@ class App:
             self.tray.setToolTip(f"{name}\n" + "  ·  ".join(p for p in parts if p))
         else:
             self.tray.setIcon(tray_icon(None, None, connected=False))
-            if self.device is None:
-                tip = "mebuds: no paired Xiaomi earbuds"
-            elif not self.device.connected:
-                tip = f"{name}: disconnected"
-            elif s.error:
-                tip = f"{name}: can't open the control channel\n({s.error})"
-            else:
-                tip = f"{name}: connecting…"
+            tip = f"mebuds\n{self._status_text()}"
+            if s.error and self.device and self.device.connected:
+                tip += f"\n({s.error})"
             self.tray.setToolTip(tip)
         self._rebuild_menu()
+
+    def _status_text(self) -> str:
+        """What to show instead of the earbuds' name while they aren't
+        connected to mebuds."""
+        if self.device is None:
+            return "No paired Xiaomi earbuds"
+        if not self.device.connected:
+            return "No earbuds connected"
+        if self.buds.state.connection in ("connecting", "authenticating"):
+            return "Connecting to earbuds…"
+        return "Can't reach the earbuds"
 
     def _rebuild_menu(self):
         self.menu.clear()
         s = self.buds.state
         model = s.model
-        name = s.alias or s.name or (self.device.name if self.device else "No earbuds")
+        name = (s.alias or s.name or model.name) if s.ready else self._status_text()
         header = QAction(name, self.menu)
         header.setEnabled(False)
         self.menu.addAction(header)

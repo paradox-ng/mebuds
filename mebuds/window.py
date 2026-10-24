@@ -32,7 +32,6 @@ EQ_SEND_DELAY_MS = 300
 CONNECTION_TEXT = {
     "connecting": "Connecting…",
     "authenticating": "Connecting…",
-    "ready": "Connected",
 }
 
 
@@ -399,16 +398,17 @@ class ControlWindow(QWidget):
     def refresh(self):
         s: BudsState = self.buds.state
         model = s.model
-        self.title.setText((s.alias or s.name or model.name) if s.address else "No earbuds")
+        # The name only shows while the earbuds are actually connected.
         if s.ready:
+            self.title.setText(s.alias or s.name or model.name)
             self.status.setText("Connected")
         elif s.connection in CONNECTION_TEXT:
-            self.status.setText(CONNECTION_TEXT[s.connection])
-        elif s.error:
-            self.status.setText("Not connected")
+            self.title.setText("Connecting to earbuds…")
+            self.status.setText("")
         else:
-            self.status.setText("Disconnected" if s.address else "")
-        self.status.setToolTip(s.error)
+            self.title.setText("No earbuds connected")
+            self.status.setText("")
+        self.title.setToolTip("" if s.ready else s.error)
 
         wear = s.wear()
         unknown = Battery()
