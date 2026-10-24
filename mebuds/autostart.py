@@ -20,7 +20,10 @@ def _command() -> list[str]:
         return [appimage]
     if getattr(sys, "frozen", False):
         return [sys.executable]
-    return [sys.executable, str(ROOT / "packaging" / "launcher.py")]
+    launcher = ROOT / "packaging" / "launcher.py"
+    if launcher.exists():  # source checkout
+        return [sys.executable, str(launcher)]
+    return [sys.executable, "-m", NAME]  # installed package
 
 
 # ----- Linux (XDG autostart) -----
