@@ -66,7 +66,18 @@ Pair and connect the earbuds in your system's Bluetooth settings first, then:
 
 - **Linux:** make the AppImage executable and run it:
   `chmod +x mebuds-*.AppImage && ./mebuds-*.AppImage`. It uses BlueZ, the
-  standard Linux Bluetooth stack, and doesn't need root.
+  standard Linux Bluetooth stack, and doesn't need root. The AppImage carries
+  its own copy of Qt, so it draws with Qt's Fusion style instead of your
+  desktop's (Breeze on KDE).
+- **Arch Linux / Manjaro:** the package from `packaging/arch` uses the system
+  Qt instead, so mebuds looks like the rest of your desktop and appears in the
+  application menu:
+
+  ```
+  git clone https://github.com/paradox-ng/mebuds
+  cd mebuds/packaging/arch
+  makepkg -si
+  ```
 - **Windows:** extract the zip and run `mebuds\mebuds.exe`.
 
 To have it start when you log in, turn on *Start mebuds when you log in* in the
