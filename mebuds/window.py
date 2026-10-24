@@ -466,15 +466,23 @@ class ControlWindow(QWidget):
         self.dual_check.setChecked(bool(dual))
         self.dual_check.blockSignals(False)
         self.find_box.setVisible(model.find_buds)
-        self.info_name.setText(s.alias or s.name or "–")
-        if model is F.UNKNOWN_MODEL:
-            pid = f" (PID {s.pid:04X})" if s.pid is not None else ""
-            self.info_model.setText(f"Unknown{pid}")
+        # The About section describes the connected earbuds only.
+        if not s.ready:
+            for label in (self.info_name, self.info_model, self.info_address,
+                          self.info_firmware, self.info_serial):
+                label.setText("–")
         else:
-            self.info_model.setText(f"{model.name} ({model.code})" if model.code else model.name)
-        self.info_address.setText(s.address or "–")
-        self.info_firmware.setText(s.firmware or "–")
-        self.info_serial.setText(s.serial or "–")
+            self.info_name.setText(s.alias or s.name or "–")
+            if model is F.UNKNOWN_MODEL:
+                pid = f" (PID {s.pid:04X})" if s.pid is not None else ""
+                self.info_model.setText(f"Unknown{pid}")
+            else:
+                self.info_model.setText(
+                    f"{model.name} ({model.code})" if model.code else model.name
+                )
+            self.info_address.setText(s.address or "–")
+            self.info_firmware.setText(s.firmware or "–")
+            self.info_serial.setText(s.serial or "–")
 
         for tab in range(self.tabs.count() - 1):  # settings stay usable
             self.tabs.widget(tab).setEnabled(s.ready)

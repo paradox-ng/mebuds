@@ -68,9 +68,11 @@ def test_window_hides_battery_while_disconnected(qapp):
     buds = Buds()
     buds.state.address = "12:34:56:78:9A:BC"
     buds.state.left = Battery(100, True)  # stale value from before
+    buds.state.alias = "PrdxBuds"
     w = ControlWindow(buds)
     w.refresh()
     assert w.left_card.level.text() == "–"
+    assert w.info_name.text() == "–"
 
 
 def test_wear_state_push(qapp):
