@@ -71,13 +71,11 @@ def bud(ox=0.0, oy=0.0, scale=1.0, details=True):
                  f"A{f(rad)} {f(rad)} 0 0 0 {f(sr)} {f(bottom - rad)} "
                  f"L{f(sr)} {f(ry_ - 6 * s)} Z")
 
-    # Outline: head over the top, then the stem sides with a gap on the left.
-    gap_top, gap_bot = oy + 86 * s, oy + 95 * s
+    # Outline: head over the top, then down and around the stem.
     outline_head = f"M{f(rx_)} {f(ry_)} " + head.arc(t_r, t_l - 360)
-    stem_right = (f"M{f(sr)} {f(ry_)} L{f(sr)} {f(bottom - rad)} "
-                  f"A{f(rad)} {f(rad)} 0 0 1 {f(sl)} {f(bottom - rad)} "
-                  f"L{f(sl)} {f(gap_bot)}")
-    stem_left = f"M{f(sl)} {f(gap_top)} L{f(sl)} {f(ly_)}"
+    stem_outline = (f"M{f(sr)} {f(ry_)} L{f(sr)} {f(bottom - rad)} "
+                    f"A{f(rad)} {f(rad)} 0 0 1 {f(sl)} {f(bottom - rad)} "
+                    f"L{f(sl)} {f(ly_)}")
 
     out = [
         f'<path d="{head_fill}" fill="{FILL}"/>',
@@ -94,8 +92,7 @@ def bud(ox=0.0, oy=0.0, scale=1.0, details=True):
               'stroke-linecap="round" stroke-linejoin="round"')
     out += [
         f'<path d="{outline_head}" {stroke}/>',
-        f'<path d="{stem_right}" {stroke}/>',
-        f'<path d="{stem_left}" {stroke}/>',
+        f'<path d="{stem_outline}" {stroke}/>',
     ]
     if details:
         # Highlight stroke near the top and the mic slot on the face.
