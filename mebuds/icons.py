@@ -6,7 +6,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QByteArray, QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+    QPixmap,
+    QTransform,
+)
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
@@ -74,13 +83,54 @@ def _draw_bar(p: QPainter, rect: QRectF, level: int | None, charging: bool,
         _bolt(p, bolt, fg if not mono else QColor(255, 196, 0))
 
 
+CHARGING_GREEN = QColor(39, 174, 96)  # Breeze positive green
+
+
+def _bud_path() -> QPainterPath:
+    """Right earbud silhouette (head + stem) in an 11 x 22 cell."""
+    head = QPainterPath()
+    head.addEllipse(QPointF(0, 0), 4.7, 4.3)
+    head = QTransform().translate(5.3, 6.0).rotate(-14).map(head)
+    stem = QPainterPath()
+    stem.addRoundedRect(QRectF(4.9, 6.5, 3.5, 14.3), 1.75, 1.75)
+    return head.united(stem).simplified()
+
+
+def _draw_bud(p: QPainter, level: int | None, charging: bool, fg: QColor,
+              mirror: bool):
+    """One bud in the current 22 x 22 coordinate space, filled from the
+    bottom up to its charge."""
+    path = _bud_path()
+    if mirror:
+        path = QTransform().translate(11, 0).scale(-1, 1).map(path)
+    else:
+        path = QTransform().translate(11, 0).map(path)
+    if level is not None:
+        if level <= LOW_BATTERY:
+            color = level_color(level)
+        elif charging:
+            color = CHARGING_GREEN
+        else:
+            color = fg
+        box = path.boundingRect()
+        frac = max(0.08, min(1.0, level / 100))
+        top = box.bottom() - box.height() * frac
+        clip = QPainterPath()
+        clip.addRect(QRectF(box.left() - 1, top, box.width() + 2, box.bottom() - top + 1))
+        p.fillPath(path.intersected(clip), color)
+    p.setPen(QPen(fg, 1.3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+    p.setBrush(Qt.NoBrush)
+    p.drawPath(path)
+
+
 def tray_icon(left: int | None, right: int | None, left_charging: bool = False,
               right_charging: bool = False, connected: bool = True) -> QIcon:
-    """Two small batteries side by side, left bud then right bud. Monochrome
-    like Plasma's tray icons, turning red when a bud runs low."""
+    """The two earbuds, each filled up to its battery level. Monochrome like
+    Plasma's tray icons; red when a bud runs low, green while charging, and
+    just outlines while disconnected."""
     fg = _foreground()
     if not connected:
-        fg.setAlphaF(0.45)
+        fg.setAlphaF(0.5)
         left = right = None
     icon = QIcon()
     for size in SIZES:
@@ -88,13 +138,9 @@ def tray_icon(left: int | None, right: int | None, left_charging: bool = False,
         pm.fill(Qt.transparent)
         p = QPainter(pm)
         p.setRenderHint(QPainter.Antialiasing)
-        bar_w = size * 0.36
-        gap = size * 0.12
-        x0 = (size - 2 * bar_w - gap) / 2
-        top, height = size * 0.06, size * 0.88
-        _draw_bar(p, QRectF(x0, top, bar_w, height), left, left_charging, fg, True)
-        _draw_bar(p, QRectF(x0 + bar_w + gap, top, bar_w, height), right,
-                  right_charging, fg, True)
+        p.scale(size / 22, size / 22)
+        _draw_bud(p, left, left_charging, fg, mirror=True)
+        _draw_bud(p, right, right_charging, fg, mirror=False)
         p.end()
         icon.addPixmap(pm)
     return icon
