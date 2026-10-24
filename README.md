@@ -42,6 +42,10 @@ mebuds connects to the buds' control channel by itself when they connect to
 your computer, and lets go when they disconnect. It can warn you when an
 earbud's battery gets low.
 
+It has its own look, based on KDE's Breeze, so it's the same on every system.
+It's light or dark following your system's setting. Start it with
+`--native-style` to use your desktop's widget style instead.
+
 The buds accept only one control connection at a time. While the Xiaomi app on
 your phone is connected to them, mebuds can't get in; it keeps retrying and
 picks up once the phone lets go.
@@ -66,12 +70,9 @@ Pair and connect the earbuds in your system's Bluetooth settings first, then:
 
 - **Linux:** make the AppImage executable and run it:
   `chmod +x mebuds-*.AppImage && ./mebuds-*.AppImage`. It uses BlueZ, the
-  standard Linux Bluetooth stack, and doesn't need root. The AppImage carries
-  its own copy of Qt, so it draws with Qt's Fusion style instead of your
-  desktop's (Breeze on KDE).
-- **Arch Linux / Manjaro:** the package from `packaging/arch` uses the system
-  Qt instead, so mebuds looks like the rest of your desktop and appears in the
-  application menu:
+  standard Linux Bluetooth stack, and doesn't need root.
+- **Arch Linux / Manjaro:** the package from `packaging/arch` installs mebuds
+  with a menu entry, using the system's Qt:
 
   ```
   git clone https://github.com/paradox-ng/mebuds
