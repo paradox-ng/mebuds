@@ -29,10 +29,24 @@ from .icons import app_icon, art_pixmap, battery_pixmap
 
 EQ_SEND_DELAY_MS = 300
 
-CONNECTION_TEXT = {
-    "connecting": "Connecting…",
-    "authenticating": "Connecting…",
-}
+CONNECTING = ("connecting", "authenticating")
+
+# Shown in their own language, so they're never translated.
+LANGUAGES = (
+    ("en", "English"),
+    ("ca", "Català"),
+    ("de", "Deutsch"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("it", "Italiano"),
+    ("pt", "Português (Brasil)"),
+    ("ru", "Русский"),
+    ("zh_CN", "简体中文"),
+)
+
+
+def _bold(text: str) -> str:
+    return f"<b>{text}</b>"
 
 
 def _freq_label(hz: int) -> str:
@@ -79,7 +93,7 @@ class BatteryCard(QFrame):
             self.level.setText("–")
         else:
             self.level.setText(f"{b.level}%")
-        self.icon.setToolTip("Charging" if b.charging else "")
+        self.icon.setToolTip(self.tr("Charging") if b.charging else "")
         self.status.setText(status)
 
 
@@ -161,6 +175,8 @@ class ControlWindow(QWidget):
     renameRequested = Signal(str)
     trayVisibilityChanged = Signal(bool)
     lowBatteryNotifyChanged = Signal(bool)
+    connectNotifyChanged = Signal(bool)
+    languageChanged = Signal(str)
     quitRequested = Signal()
 
     def __init__(self, buds: Buds):
@@ -174,7 +190,7 @@ class ControlWindow(QWidget):
         root = QVBoxLayout(self)
 
         # --- header ---
-        self.title = QLabel("No earbuds")
+        self.title = QLabel()
         font = self.title.font()
         font.setBold(True)
         font.setPointSizeF(font.pointSizeF() * 1.3)
@@ -189,9 +205,9 @@ class ControlWindow(QWidget):
 
         # --- batteries ---
         # The drawing is the right earbud; the left one is its mirror image.
-        self.left_card = BatteryCard("Left", "earbud", mirror=True)
-        self.case_card = BatteryCard("Case", "case")
-        self.right_card = BatteryCard("Right", "earbud")
+        self.left_card = BatteryCard(self.tr("Left"), "earbud", mirror=True)
+        self.case_card = BatteryCard(self.tr("Case"), "case")
+        self.right_card = BatteryCard(self.tr("Right"), "earbud")
         cards = QHBoxLayout()
         for c in (self.left_card, self.case_card, self.right_card):
             cards.addWidget(c)
@@ -213,7 +229,7 @@ class ControlWindow(QWidget):
         self.sound_tab = QWidget()
         layout = QVBoxLayout(self.sound_tab)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Audio balance"))
+        row.addWidget(QLabel(self.tr("Audio balance")))
         self.eq_combo = QComboBox()
         self.eq_combo.activated.connect(self._on_eq_preset)
         row.addWidget(self.eq_combo, 1)
@@ -223,9 +239,9 @@ class ControlWindow(QWidget):
         eq_layout = QVBoxLayout(self.eq_box)
         eq_layout.setContentsMargins(0, 8, 0, 0)
         eq_header = QHBoxLayout()
-        eq_header.addWidget(QLabel("Equalizer"))
+        eq_header.addWidget(QLabel(self.tr("Equalizer")))
         eq_header.addStretch()
-        reset = QPushButton("Reset")
+        reset = QPushButton(self.tr("Reset"))
         eq_header.addWidget(reset)
         eq_layout.addLayout(eq_header)
         self.eq_editor = EqualizerEditor()
@@ -234,21 +250,21 @@ class ControlWindow(QWidget):
         reset.clicked.connect(self.eq_editor.reset)
         eq_layout.addWidget(self.eq_editor)
         layout.addWidget(self.eq_box)
-        hint = QLabel("Play some music while choosing, to hear the difference.")
+        hint = QLabel(self.tr("Play some music while choosing, to hear the difference."))
         hint.setEnabled(False)
         hint.setWordWrap(True)
         layout.addWidget(hint)
         layout.addStretch()
-        self.tabs.addTab(self.sound_tab, "Sound")
+        self.tabs.addTab(self.sound_tab, self.tr("Sound"))
 
     def _build_gestures_tab(self):
         self.gestures_tab = QWidget()
         self.gestures_grid = QGridLayout(self.gestures_tab)
-        self.gestures_grid.addWidget(QLabel("<b>Left</b>"), 0, 1, Qt.AlignHCenter)
-        self.gestures_grid.addWidget(QLabel("<b>Right</b>"), 0, 2, Qt.AlignHCenter)
+        self.gestures_grid.addWidget(QLabel(_bold(self.tr("Left"))), 0, 1, Qt.AlignHCenter)
+        self.gestures_grid.addWidget(QLabel(_bold(self.tr("Right"))), 0, 2, Qt.AlignHCenter)
         self.gesture_combos: dict[tuple[int, str], QComboBox] = {}
         self._gesture_model: F.Model | None = None
-        self.tabs.addTab(self.gestures_tab, "Gestures")
+        self.tabs.addTab(self.gestures_tab, self.tr("Gestures"))
 
     def _rebuild_gestures(self, model: F.Model):
         for combo in self.gesture_combos.values():
@@ -266,11 +282,11 @@ class ControlWindow(QWidget):
             actions = model.gestures.get(gesture)
             if not actions:
                 continue
-            self.gestures_grid.addWidget(QLabel(F.GESTURE_NAMES[gesture]), row, 0)
+            self.gestures_grid.addWidget(QLabel(F.gesture_name(gesture)), row, 0)
             for col, side in ((1, "left"), (2, "right")):
                 combo = QComboBox()
                 for a in actions:
-                    combo.addItem(F.ACTION_NAMES.get(a, f"Action {a}"), a)
+                    combo.addItem(F.action_name(a), a)
                 combo.activated.connect(
                     lambda _i, g=gesture, s=side, c=combo: self.buds.set_gesture(
                         g, s, c.currentData()
@@ -279,7 +295,7 @@ class ControlWindow(QWidget):
                 self.gestures_grid.addWidget(combo, row, col)
                 self.gesture_combos[(gesture, side)] = combo
             row += 1
-        note = QLabel("Single-tap gestures are easy to trigger by accident.")
+        note = QLabel(self.tr("Single-tap gestures are easy to trigger by accident."))
         note.setEnabled(False)
         self.gestures_grid.addWidget(note, row, 0, 1, 3)
         self.gestures_grid.setRowStretch(row + 1, 1)
@@ -289,8 +305,8 @@ class ControlWindow(QWidget):
         self.device_tab = QWidget()
         layout = QVBoxLayout(self.device_tab)
 
-        self.dual_check = QCheckBox("Dual connection")
-        self.dual_check.setToolTip("Connect the earbuds to two devices at the same time")
+        self.dual_check = QCheckBox(self.tr("Dual connection"))
+        self.dual_check.setToolTip(self.tr("Connect the earbuds to two devices at the same time"))
         self.dual_check.toggled.connect(
             lambda on: self.buds.set_flag(F.CFG_DUAL_CONNECTION, on)
         )
@@ -299,61 +315,68 @@ class ControlWindow(QWidget):
         self.find_box = QWidget()
         find = QVBoxLayout(self.find_box)
         find.setContentsMargins(0, 8, 0, 0)
-        find.addWidget(QLabel("<b>Find your earbuds</b>"))
+        find.addWidget(QLabel(_bold(self.tr("Find your earbuds"))))
         warn = QLabel(
-            "The alarm is loud. Don't play it while the earbuds are in your ears."
+            self.tr("The alarm is loud. Don't play it while the earbuds are in your ears.")
         )
         warn.setWordWrap(True)
         warn.setEnabled(False)
         find.addWidget(warn)
         buttons = QHBoxLayout()
-        for text, side in (("Left", F.SIDE_LEFT), ("Both", F.SIDE_BOTH),
-                           ("Right", F.SIDE_RIGHT)):
-            b = QPushButton(f"Ring {text.lower()}")
+        for text, side in ((self.tr("Ring left"), F.SIDE_LEFT),
+                           (self.tr("Ring both"), F.SIDE_BOTH),
+                           (self.tr("Ring right"), F.SIDE_RIGHT)):
+            b = QPushButton(text)
             b.clicked.connect(lambda _=False, s=side: self.buds.find_buds(True, s))
             buttons.addWidget(b)
-        stop = QPushButton("Stop")
+        stop = QPushButton(self.tr("Stop"))
         stop.clicked.connect(lambda: self.buds.find_buds(False))
         buttons.addWidget(stop)
         find.addLayout(buttons)
         layout.addWidget(self.find_box)
 
-        info_title = QLabel("<b>About</b>")
+        info_title = QLabel(_bold(self.tr("About")))
         info_title.setContentsMargins(0, 8, 0, 0)
         layout.addWidget(info_title)
         form = QFormLayout()
         self.info_name = QLabel()
-        rename = QPushButton("Rename…")
+        rename = QPushButton(self.tr("Rename…"))
         rename.clicked.connect(self._on_rename)
         name_row = QHBoxLayout()
         name_row.addWidget(self.info_name, 1)
         name_row.addWidget(rename)
-        form.addRow("Name", name_row)
+        form.addRow(self.tr("Name"), name_row)
         self.info_model = QLabel()
         self.info_address = QLabel()
         self.info_firmware = QLabel()
         self.info_serial = QLabel()
-        for label, w in (("Model", self.info_model), ("MAC address", self.info_address),
-                         ("Firmware", self.info_firmware), ("Serial no.", self.info_serial)):
+        for label, w in ((self.tr("Model"), self.info_model),
+                         (self.tr("MAC address"), self.info_address),
+                         (self.tr("Firmware"), self.info_firmware),
+                         (self.tr("Serial no."), self.info_serial)):
             w.setTextInteractionFlags(Qt.TextSelectableByMouse)
             form.addRow(label, w)
         layout.addLayout(form)
         layout.addStretch()
-        self.tabs.addTab(self.device_tab, "Device")
+        self.tabs.addTab(self.device_tab, self.tr("Device"))
 
     def _build_settings_tab(self):
         tab = QWidget()
         layout = QVBoxLayout(tab)
-        self.tray_check = QCheckBox("Show tray icon")
+        self.tray_check = QCheckBox(self.tr("Show tray icon"))
         self.tray_check.toggled.connect(self.trayVisibilityChanged)
-        self.lowbat_check = QCheckBox("Notify when an earbud's battery is low")
+        self.lowbat_check = QCheckBox(self.tr("Notify when an earbud's battery is low"))
         self.lowbat_check.toggled.connect(self.lowBatteryNotifyChanged)
+        self.connect_check = QCheckBox(self.tr("Notify when the earbuds connect"))
+        self.connect_check.toggled.connect(self.connectNotifyChanged)
         layout.addWidget(self.tray_check)
         layout.addWidget(self.lowbat_check)
+        layout.addWidget(self.connect_check)
 
-        self.autostart_check = QCheckBox("Start mebuds when you log in")
-        self.autostart_hidden_check = QCheckBox("Start in the tray, without opening the window")
-        self.autostart_hidden_check.setContentsMargins(24, 0, 0, 0)
+        self.autostart_check = QCheckBox(self.tr("Start mebuds when you log in"))
+        self.autostart_hidden_check = QCheckBox(
+            self.tr("Start in the tray, without opening the window")
+        )
         hidden_row = QHBoxLayout()
         hidden_row.setContentsMargins(24, 0, 0, 0)
         hidden_row.addWidget(self.autostart_hidden_check)
@@ -365,17 +388,36 @@ class ControlWindow(QWidget):
         layout.addWidget(self.autostart_check)
         layout.addLayout(hidden_row)
 
+        lang_row = QHBoxLayout()
+        lang_row.setContentsMargins(0, 8, 0, 0)
+        lang_row.addWidget(QLabel(self.tr("Language")))
+        self.language_combo = QComboBox()
+        self.language_combo.addItem(self.tr("System default"), "")
+        for code, name in LANGUAGES:
+            self.language_combo.addItem(name, code)
+        self.language_combo.activated.connect(self._on_language)
+        lang_row.addWidget(self.language_combo, 1)
+        layout.addLayout(lang_row)
+        self.language_note = QLabel(self.tr("Restart mebuds to apply the new language."))
+        self.language_note.setEnabled(False)
+        self.language_note.hide()
+        layout.addWidget(self.language_note)
+
         layout.addStretch()
-        about = QPushButton("About mebuds")
+        about = QPushButton(self.tr("About mebuds"))
         about.clicked.connect(self.show_about)
         about_row = QHBoxLayout()
         about_row.addStretch()
         about_row.addWidget(about)
         layout.addLayout(about_row)
-        self.tabs.addTab(tab, "Settings")
+        self.tabs.addTab(tab, self.tr("Settings"))
 
     def show_about(self):
         AboutDialog(self).exec()
+
+    def _on_language(self, index: int):
+        self.language_note.show()
+        self.languageChanged.emit(self.language_combo.itemData(index))
 
     def _on_autostart(self):
         enabled = self.autostart_check.isChecked()
@@ -383,17 +425,24 @@ class ControlWindow(QWidget):
         try:
             autostart.set_enabled(enabled, self.autostart_hidden_check.isChecked())
         except OSError as exc:
-            QMessageBox.warning(self, "Autostart", f"Couldn't change autostart:\n{exc}")
+            QMessageBox.warning(
+                self,
+                self.tr("Autostart"),
+                self.tr("Couldn't change autostart:\n{error}").format(error=exc),
+            )
 
     # ----- state -> widgets -----
-    def set_settings(self, tray_visible: bool, tray_supported: bool, low_battery: bool):
-        for w, v in ((self.tray_check, tray_visible), (self.lowbat_check, low_battery)):
+    def set_settings(self, tray_visible: bool, tray_supported: bool, low_battery: bool,
+                     connect_notify: bool, language: str = ""):
+        self.language_combo.setCurrentIndex(max(0, self.language_combo.findData(language)))
+        for w, v in ((self.tray_check, tray_visible), (self.lowbat_check, low_battery),
+                     (self.connect_check, connect_notify)):
             w.blockSignals(True)
             w.setChecked(v)
             w.blockSignals(False)
         self.tray_check.setEnabled(tray_supported)
         if not tray_supported:
-            self.tray_check.setToolTip("No system tray found on this desktop")
+            self.tray_check.setToolTip(self.tr("No system tray found on this desktop"))
 
     def refresh(self):
         s: BudsState = self.buds.state
@@ -401,12 +450,12 @@ class ControlWindow(QWidget):
         # The name only shows while the earbuds are actually connected.
         if s.ready:
             self.title.setText(s.alias or s.name or model.name)
-            self.status.setText("Connected")
-        elif s.connection in CONNECTION_TEXT:
-            self.title.setText("Connecting to earbuds…")
+            self.status.setText(self.tr("Connected"))
+        elif s.connection in CONNECTING:
+            self.title.setText(self.tr("Connecting to earbuds…"))
             self.status.setText("")
         else:
-            self.title.setText("No earbuds connected")
+            self.title.setText(self.tr("No earbuds connected"))
             self.status.setText("")
         self.title.setToolTip("" if s.ready else s.error)
 
@@ -423,7 +472,7 @@ class ControlWindow(QWidget):
         # The buds only know the case's charge while one of them sits in it.
         self.case_card.set_battery(
             s.case if s.ready else unknown,
-            "" if s.case.level is not None or not s.ready else "Put a bud in to read",
+            "" if s.case.level is not None or not s.ready else self.tr("Put a bud in to read"),
         )
 
         # Sound
@@ -434,7 +483,7 @@ class ControlWindow(QWidget):
             if [self.eq_combo.itemData(i) for i in range(self.eq_combo.count())] != list(model.eq_presets):
                 self.eq_combo.clear()
                 for p in model.eq_presets:
-                    self.eq_combo.addItem(F.EQ_PRESET_NAMES.get(p, f"Preset {p}"), p)
+                    self.eq_combo.addItem(F.preset_name(p), p)
             idx = self.eq_combo.findData(current)
             self.eq_combo.setCurrentIndex(idx)
             custom = model.custom_eq and current == F.EQ_CUSTOM
@@ -455,7 +504,7 @@ class ControlWindow(QWidget):
                         continue
                     i = combo.findData(action)
                     if i < 0:  # set to something the official app doesn't offer
-                        combo.addItem(F.ACTION_NAMES.get(action, f"Action {action}"), action)
+                        combo.addItem(F.action_name(action), action)
                         i = combo.count() - 1
                     combo.setCurrentIndex(i)
 
@@ -474,8 +523,10 @@ class ControlWindow(QWidget):
         else:
             self.info_name.setText(s.alias or s.name or "–")
             if model is F.UNKNOWN_MODEL:
-                pid = f" (PID {s.pid:04X})" if s.pid is not None else ""
-                self.info_model.setText(f"Unknown{pid}")
+                if s.pid is not None:
+                    self.info_model.setText(self.tr("Unknown (PID {pid})").format(pid=f"{s.pid:04X}"))
+                else:
+                    self.info_model.setText(self.tr("Unknown"))
             else:
                 self.info_model.setText(
                     f"{model.name} ({model.code})" if model.code else model.name
@@ -487,16 +538,15 @@ class ControlWindow(QWidget):
         for tab in range(self.tabs.count() - 1):  # settings stay usable
             self.tabs.widget(tab).setEnabled(s.ready)
 
-    @staticmethod
-    def _where(in_ear: bool, in_case: bool, battery: Battery, s: BudsState) -> str:
+    def _where(self, in_ear: bool, in_case: bool, battery: Battery, s: BudsState) -> str:
         if not s.ready:
             return ""
         # A bud only charges in the case; the in-case flag isn't always set.
         if in_case or battery.charging:
-            return "In case"
+            return self.tr("In case")
         if F.CFG_WEAR_STATE not in s.configs:
             return ""
-        return "In ear" if in_ear else "Out"
+        return self.tr("In ear") if in_ear else self.tr("Out")
 
     # ----- actions -----
     def _on_eq_preset(self, index: int):
@@ -504,7 +554,9 @@ class ControlWindow(QWidget):
 
     def _on_rename(self):
         current = self.buds.state.alias or self.buds.state.name
-        name, ok = QInputDialog.getText(self, "Rename earbuds", "Name:", text=current)
+        name, ok = QInputDialog.getText(
+            self, self.tr("Rename earbuds"), self.tr("Name:"), text=current
+        )
         if ok and name.strip() and name.strip() != current:
             self.renameRequested.emit(name.strip())
 
