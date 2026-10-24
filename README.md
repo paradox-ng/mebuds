@@ -1,4 +1,4 @@
-<h1 align="center"><img src="docs/banner.svg" alt="mebuds" width="560"></h1>
+<h1><img src="docs/banner.svg" alt="mebuds" width="560"></h1>
 
 Desktop application for controlling your Xiaomi earbuds, like the official
 Android app but for your computer. It was reverse engineered from that app and
