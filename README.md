@@ -11,34 +11,58 @@ Buds 8 Active from KDE. The protocol comes from the Android app, version 1.35.1.
 mebuds doesn't need a Xiaomi account or an internet connection; everything
 happens between your PC and the buds.
 
-## Status
+## Features
 
-It's early. The protocol side works against real hardware: mebuds finds the buds'
-control channel, passes their authentication handshake, and reads the battery
-(left, right, case), firmware version, serial number and current settings.
+The tray icon shows the left and right earbud as two small batteries and turns
+red when one runs low. Hover it for exact percentages (and the case, when the
+buds report it), or right-click it to change the EQ preset, toggle dual
+connection or make the buds ring.
 
-The tray icon and the settings window are being built now. Planned controls, all
-of which the Buds 8 Active respond to:
+The window has the rest:
 
-- noise control mode
-- EQ presets and a 10-band custom EQ
-- touch gestures
-- game mode (low latency)
-- dual-device connection
-- find my buds (make them beep)
+- battery for each earbud and the case, and whether each bud is in your ear or
+  in the case
+- audio balance presets and the 10-band custom equalizer
+- touch gestures for each earbud
+- dual connection
+- find your earbuds (ring left, right or both)
+- rename, firmware version, serial number
+
+mebuds follows BlueZ: it connects to the buds' control channel when they connect
+to your PC and lets go when they disconnect. It can warn you when an earbud's
+battery gets low.
+
+The buds accept only one control connection at a time. While the Xiaomi app on
+your phone is connected to them, mebuds can't get in; it keeps retrying and
+picks up once the phone lets go.
 
 ## Supported devices
 
-Tested with REDMI Buds 8 Active. Other Xiaomi and Redmi buds that the official
-app talks to over the same protocol will probably connect, though the settings
-they support differ by model. If you try another pair, an issue with the result
-would help.
+REDMI Buds 8 Active (M2537E1) is the only model I have, and its feature list
+matches what the official app shows for it.
+
+Other Xiaomi and Redmi buds use the same protocol and will probably connect, but
+mebuds only shows battery and device info for them. The official app gets each
+model's feature list from Xiaomi's servers, and the firmware answers settings
+the hardware doesn't have (my pair accepts ANC commands, then ignores them), so
+asking the buds isn't a reliable way to tell. Adding a model is a short entry in
+`mebuds/features.py`. If you have another pair, open an issue with screenshots of
+the official app.
 
 ## Running it
 
-You need Linux with BlueZ, Python 3.10 or newer, and PySide6 (`pip install
-PySide6`). Pair and connect the buds as usual first. mebuds opens an ordinary
-RFCOMM socket as your user, so it needs neither root nor a helper daemon.
+You need Linux with BlueZ, Python 3.10 or newer, and PySide6. Pair and connect
+the buds as usual first. mebuds opens an ordinary RFCOMM socket as your user, so
+it needs neither root nor a helper daemon.
+
+```
+pip install PySide6
+./run.sh
+```
+
+or install it with `pip install .` and run `mebuds`. Pass `--hidden` to start
+in the tray without opening the window, which is what the included
+`mebuds.desktop` does for autostart.
 
 Python has to be built with Bluetooth socket support. This command prints
 nothing if it is:
@@ -47,12 +71,10 @@ nothing if it is:
 python3 -c "import socket; socket.AF_BLUETOOTH"
 ```
 
-There is no launcher yet; one comes with the tray app.
-
 ## Protocol notes
 
-These come from decompiling the official app. Everything below except the `0xF4`
-notifications has also been confirmed against my buds.
+These come from decompiling the official app, and I confirmed all of it against
+my buds.
 
 The buds expose an RFCOMM service with the 16-bit UUID `0xFD2D`, which is
 registered to Xiaomi. BlueZ no longer ships `sdptool` and doesn't expose remote
@@ -85,23 +107,29 @@ firmware version, the VID/PID (`2717:50E2` for the Buds 8 Active) and the
 battery as three bytes for left, right and case. A battery byte of `0xFF` means
 unknown; my case reported it while both buds were out of it.
 
+Battery changes arrive as `0x0E` pushes, which the host has to acknowledge. Each
+battery byte has the percentage in the low 7 bits and the charging flag in bit 7.
+
 Settings are read with `0xF3` and written with `0xF2`, as a list of
-`[length] [type u16] [value]` entries. The official app expects the buds to
-announce changes with `0xF4`.
-These are the setting types my pair answers to (anything else returns status 4):
+`[length] [type u16] [value]` entries, and the buds announce changes with
+`0xF4`. These are the setting types my pair answers to (anything else returns
+status 4):
 
 | Type | Setting |
 |------|---------|
-| 2 | Touch gestures |
+| 2 | Touch gestures: `[gesture] [left action] [right action]` |
 | 4 | Dual-device connection |
 | 7 | EQ preset |
-| 9 | Find my buds |
-| 10 | Noise control mode |
-| 11 | Noise control level |
+| 9 | Find my buds: `[ring/stop] [left/right/both]` |
+| 10, 11 | Noise control (answered, but no effect on this model) |
+| 12 | In-ear / in-case flags for each bud |
 | 39 | Serial number |
-| 47 | Game mode (low latency) |
-| 55 | Custom EQ, 10 bands from 62 Hz to 16 kHz |
+| 47 | Game mode (answered, but not offered for this model) |
+| 55 | Custom EQ, 10 bands from 62 Hz to 16 kHz, ±6 dB |
 | 71 | Firmware version |
+
+Renaming the buds in the official app only changes a name stored on the phone,
+so mebuds does the same with the BlueZ alias.
 
 ## Disclaimer
 
