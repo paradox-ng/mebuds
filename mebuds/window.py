@@ -47,6 +47,7 @@ class BatteryCard(QFrame):
     def __init__(self, title: str, art: str, mirror: bool = False):
         super().__init__()
         self.art, self.mirror = art, mirror
+        self.setObjectName("card")  # styled by theme.py
         self.setFrameShape(QFrame.StyledPanel)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignHCenter)
@@ -414,11 +415,11 @@ class ControlWindow(QWidget):
         unknown = Battery()
         self.left_card.set_battery(
             s.left if s.ready else unknown,
-            self._where(wear["left_in_ear"], wear["left_in_case"], s),
+            self._where(wear["left_in_ear"], wear["left_in_case"], s.left, s),
         )
         self.right_card.set_battery(
             s.right if s.ready else unknown,
-            self._where(wear["right_in_ear"], wear["right_in_case"], s),
+            self._where(wear["right_in_ear"], wear["right_in_case"], s.right, s),
         )
         # The buds only know the case's charge while one of them sits in it.
         self.case_card.set_battery(
@@ -488,11 +489,14 @@ class ControlWindow(QWidget):
             self.tabs.widget(tab).setEnabled(s.ready)
 
     @staticmethod
-    def _where(in_ear: bool, in_case: bool, s: BudsState) -> str:
-        if not s.ready or F.CFG_WEAR_STATE not in s.configs:
+    def _where(in_ear: bool, in_case: bool, battery: Battery, s: BudsState) -> str:
+        if not s.ready:
             return ""
-        if in_case:
+        # A bud only charges in the case; the in-case flag isn't always set.
+        if in_case or battery.charging:
             return "In case"
+        if F.CFG_WEAR_STATE not in s.configs:
+            return ""
         return "In ear" if in_ear else "Out"
 
     # ----- actions -----
