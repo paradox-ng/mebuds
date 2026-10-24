@@ -1,16 +1,15 @@
 # mebuds
 
-Battery and settings for Xiaomi / Redmi earbuds on the Linux desktop. mebuds
-connects to the buds over Bluetooth with the same protocol Xiaomi's Android app
-uses, and puts the battery of each bud and the case in your system tray.
+Desktop application for controlling your Xiaomi earbuds, like the official
+Android app but for your computer. It was reverse engineered from that app and
+talks to the buds over Bluetooth with Xiaomi's own protocol. It shows the battery
+of each bud and the case in the system tray and lets you change the buds'
+settings.
 
-The name is a joke on Xiaomi's "Mi" branding.
-
-Xiaomi only makes the companion app for phones. I wanted to check my REDMI Buds
-8 Active and change their settings from KDE, so I took the protocol apart from
-the Android app (Xiaomi Earbuds 1.35.1) and wrote this. It doesn't need a Xiaomi
-account or an internet connection; everything happens between your PC and the
-buds.
+Xiaomi only makes the companion app for phones, and I wanted to manage my REDMI
+Buds 8 Active from KDE. The protocol comes from the Android app, version 1.35.1.
+mebuds doesn't need a Xiaomi account or an internet connection; everything
+happens between your PC and the buds.
 
 ## Status
 
