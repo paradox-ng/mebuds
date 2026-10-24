@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mebuds"
+dynamic = ["version"]
+description = "Desktop application for controlling Xiaomi earbuds"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+dependencies = ["PySide6>=6.5"]
+
+[project.scripts]
+mebuds = "mebuds.__main__:main"
+
+[tool.setuptools]
+packages = ["mebuds"]
+
+[tool.setuptools.dynamic]
+version = {attr = "mebuds.__version__"}

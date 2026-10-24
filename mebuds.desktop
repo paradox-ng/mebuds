@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=mebuds
+GenericName=Earbuds control
+Comment=Battery and settings for Xiaomi earbuds
+Exec=mebuds --hidden
+Icon=audio-headphones
+Terminal=false
+Categories=AudioVideo;Audio;Settings;
+Keywords=xiaomi;redmi;earbuds;bluetooth;battery;
+StartupNotify=false
