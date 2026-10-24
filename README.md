@@ -121,15 +121,6 @@ The tests use packets captured from real earbuds: `pip install pytest` and run
 Linux, a zip on Windows. It needs PyInstaller on top of PySide6, and output goes
 to `dist/`.
 
-GitHub Actions runs the tests and builds all four versions on every push and
-pull request. Pushing a version tag also publishes them as a release; the tag
-has to match `__version__` in `mebuds/__init__.py`:
-
-```
-git tag v0.1.0
-git push origin v0.1.0
-```
-
 ## Disclaimer
 
 mebuds is not affiliated with or endorsed by Xiaomi. This repository contains no
