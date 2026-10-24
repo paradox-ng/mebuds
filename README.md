@@ -6,10 +6,11 @@ talks to the buds over Bluetooth with Xiaomi's own protocol. It shows the batter
 of each bud and the case in the system tray and lets you change the buds'
 settings.
 
-Xiaomi only makes the companion app for phones, and I wanted to manage my REDMI
-Buds 8 Active from KDE. The protocol comes from the Android app, version 1.35.1.
-mebuds doesn't need a Xiaomi account or an internet connection; everything
-happens between your PC and the buds.
+This is a personal project. Xiaomi only makes the companion app for phones, and
+I wanted to manage my own REDMI Buds 8 Active from KDE. I'm building it for that
+pair, and supporting every Xiaomi earbud model isn't a goal. The protocol comes
+from the Android app, version 1.35.1. mebuds doesn't need a Xiaomi account or an
+internet connection; everything happens between your PC and the buds.
 
 ## Features
 
@@ -38,16 +39,16 @@ picks up once the phone lets go.
 
 ## Supported devices
 
-REDMI Buds 8 Active (M2537E1) is the only model I have, and its feature list
-matches what the official app shows for it.
+mebuds is made for the REDMI Buds 8 Active (M2537E1), the only model I own. Its
+feature list matches what the official app shows for it.
 
 Other Xiaomi and Redmi buds use the same protocol and will probably connect, but
-mebuds only shows battery and device info for them. The official app gets each
-model's feature list from Xiaomi's servers, and the firmware answers settings
-the hardware doesn't have (my pair accepts ANC commands, then ignores them), so
-asking the buds isn't a reliable way to tell. Adding a model is a short entry in
-`mebuds/features.py`. If you have another pair, open an issue with screenshots of
-the official app.
+mebuds only shows battery and device info for them, and I don't plan to test
+models I don't have. The official app gets each model's feature list from
+Xiaomi's servers, and the firmware answers settings the hardware doesn't have
+(my pair accepts ANC commands, then ignores them), so asking the buds isn't a
+reliable way to tell. If you want to add your pair, it's a short entry in
+`mebuds/features.py`, and the official app's screens show what to put in it.
 
 ## Running it
 
