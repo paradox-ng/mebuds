@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Left earbud seen from outside; the right one is drawn mirrored. -->
+  <defs>
+    <radialGradient id="shell" cx="0.36" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#8d9095"/>
+      <stop offset="0.45" stop-color="#4a4c50"/>
+      <stop offset="1" stop-color="#1f2023"/>
+    </radialGradient>
+    <radialGradient id="nozzle" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#55585c"/>
+      <stop offset="1" stop-color="#1a1b1d"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="62" cy="112" rx="34" ry="4.5" fill="#000" opacity="0.2"/>
+  <ellipse cx="84" cy="47" rx="15" ry="12" transform="rotate(-28 84 47)"
+           fill="url(#nozzle)"/>
+  <ellipse cx="90" cy="43" rx="6.5" ry="5" transform="rotate(-28 90 43)"
+           fill="#0f1011" opacity="0.85"/>
+  <ellipse cx="58" cy="70" rx="40" ry="35" transform="rotate(-14 58 70)"
+           fill="url(#shell)"/>
+  <ellipse cx="58" cy="70" rx="36.5" ry="31.5" transform="rotate(-14 58 70)"
+           fill="none" stroke="#fff" stroke-opacity="0.12" stroke-width="1.2"/>
+  <ellipse cx="44" cy="52" rx="17" ry="9" transform="rotate(-24 44 52)"
+           fill="url(#shine)"/>
+  <rect x="34" y="72" width="16" height="4.4" rx="2.2" transform="rotate(-32 42 74)"
+        fill="#0c0c0d"/>
+</svg>

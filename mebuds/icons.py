@@ -3,10 +3,14 @@ don't depend on the icon theme (Windows has none)."""
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
+DATA = Path(__file__).resolve().parent / "data"
 LOW_BATTERY = 15
 SIZES = (16, 22, 24, 32, 48, 64)
 
@@ -115,9 +119,24 @@ def battery_pixmap(level: int | None, charging: bool, size: int,
     return pm
 
 
+def art_pixmap(name: str, size: int, device_pixel_ratio: float = 1.0,
+               mirror: bool = False, dimmed: bool = False) -> QPixmap:
+    """Render one of the SVG drawings in data/ (earbud, case, mebuds)."""
+    px = int(size * device_pixel_ratio)
+    pm = QPixmap(px, px)
+    pm.setDevicePixelRatio(device_pixel_ratio)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing)
+    if dimmed:
+        p.setOpacity(0.4)
+    if mirror:
+        p.translate(size, 0)
+        p.scale(-1, 1)
+    QSvgRenderer(str(DATA / f"{name}.svg")).render(p, QRectF(0, 0, size, size))
+    p.end()
+    return pm
+
+
 def app_icon() -> QIcon:
-    for name in ("audio-headphones", "audio-headset"):
-        icon = QIcon.fromTheme(name)
-        if not icon.isNull():
-            return icon
-    return tray_icon(100, 100)
+    return QIcon(str(DATA / "mebuds.svg"))

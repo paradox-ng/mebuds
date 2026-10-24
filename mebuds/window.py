@@ -22,7 +22,8 @@ from PySide6.QtWidgets import (
 
 from . import features as F
 from .device import Battery, Buds, BudsState
-from .icons import app_icon, battery_pixmap
+from .about import AboutDialog
+from .icons import app_icon, art_pixmap, battery_pixmap
 
 EQ_SEND_DELAY_MS = 300
 
@@ -40,30 +41,44 @@ def _freq_label(hz: int) -> str:
 
 
 class BatteryCard(QFrame):
-    def __init__(self, title: str):
+    ART_SIZE = 72
+
+    def __init__(self, title: str, art: str, mirror: bool = False):
         super().__init__()
+        self.art, self.mirror = art, mirror
         self.setFrameShape(QFrame.StyledPanel)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignHCenter)
-        self.icon = QLabel(alignment=Qt.AlignHCenter)
-        self.level = QLabel("–", alignment=Qt.AlignHCenter)
+        self.picture = QLabel(alignment=Qt.AlignHCenter)
+        self.icon = QLabel()
+        self.level = QLabel("–")
         font = self.level.font()
         font.setPointSizeF(font.pointSizeF() * 1.4)
         self.level.setFont(font)
+        level_row = QHBoxLayout()
+        level_row.addStretch()
+        level_row.addWidget(self.icon)
+        level_row.addWidget(self.level)
+        level_row.addStretch()
         self.title = QLabel(title, alignment=Qt.AlignHCenter)
         self.status = QLabel("", alignment=Qt.AlignHCenter)
         self.status.setEnabled(False)
-        for w in (self.icon, self.level, self.title, self.status):
-            layout.addWidget(w)
+        layout.addWidget(self.picture)
+        layout.addLayout(level_row)
+        layout.addWidget(self.title)
+        layout.addWidget(self.status)
 
     def set_battery(self, b: Battery, status: str = ""):
-        self.icon.setPixmap(
-            battery_pixmap(b.level, b.charging, 32, self.devicePixelRatioF())
+        dpr = self.devicePixelRatioF()
+        self.picture.setPixmap(
+            art_pixmap(self.art, self.ART_SIZE, dpr, self.mirror, dimmed=b.level is None)
         )
+        self.icon.setPixmap(battery_pixmap(b.level, b.charging, 22, dpr))
         if b.level is None:
             self.level.setText("–")
         else:
-            self.level.setText(f"{b.level}%" + (" ⚡" if b.charging else ""))
+            self.level.setText(f"{b.level}%")
+        self.icon.setToolTip("Charging" if b.charging else "")
         self.status.setText(status)
 
 
@@ -172,11 +187,11 @@ class ControlWindow(QWidget):
         root.addLayout(header)
 
         # --- batteries ---
-        self.left_card = BatteryCard("Left")
-        self.right_card = BatteryCard("Right")
-        self.case_card = BatteryCard("Case")
+        self.left_card = BatteryCard("Left", "earbud")
+        self.case_card = BatteryCard("Case", "case")
+        self.right_card = BatteryCard("Right", "earbud", mirror=True)
         cards = QHBoxLayout()
-        for c in (self.left_card, self.right_card, self.case_card):
+        for c in (self.left_card, self.case_card, self.right_card):
             cards.addWidget(c)
         root.addLayout(cards)
 
@@ -334,7 +349,16 @@ class ControlWindow(QWidget):
         layout.addWidget(self.tray_check)
         layout.addWidget(self.lowbat_check)
         layout.addStretch()
+        about = QPushButton("About mebuds")
+        about.clicked.connect(self.show_about)
+        about_row = QHBoxLayout()
+        about_row.addStretch()
+        about_row.addWidget(about)
+        layout.addLayout(about_row)
         self.tabs.addTab(tab, "Settings")
+
+    def show_about(self):
+        AboutDialog(self).exec()
 
     # ----- state -> widgets -----
     def set_settings(self, tray_visible: bool, tray_supported: bool, low_battery: bool):
@@ -363,8 +387,10 @@ class ControlWindow(QWidget):
         wear = s.wear()
         self.left_card.set_battery(s.left, self._where(wear["left_in_ear"], wear["left_in_case"], s))
         self.right_card.set_battery(s.right, self._where(wear["right_in_ear"], wear["right_in_case"], s))
-        self.case_card.set_battery(s.case)
-        self.case_card.setVisible(s.case.level is not None or not s.ready)
+        # The buds only know the case's charge while one of them sits in it.
+        self.case_card.set_battery(
+            s.case, "" if s.case.level is not None or not s.ready else "Put a bud in to read"
+        )
 
         # Sound
         has_sound = bool(model.eq_presets)
