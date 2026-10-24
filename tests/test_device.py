@@ -49,6 +49,30 @@ def test_battery_push_is_acknowledged(qapp):
     assert replies == [(0x0E, 0)]
 
 
+def test_disconnect_forgets_battery_and_settings(qapp):
+    buds = Buds()
+    buds.link.reply = lambda *a, **k: None
+    buds._on_push(_feed(buds, BATTERY_PUSH))
+    buds._on_push(_feed(buds, WEAR_PUSH))
+    buds.state.name = "REDMI Buds 8 Active"
+    buds._on_link_state("disconnected")
+    s = buds.state
+    assert (s.left, s.right, s.case) == (Battery(), Battery(), Battery())
+    assert s.configs == {}
+    assert s.name == "REDMI Buds 8 Active"
+
+
+def test_window_hides_battery_while_disconnected(qapp):
+    from mebuds.window import ControlWindow
+
+    buds = Buds()
+    buds.state.address = "12:34:56:78:9A:BC"
+    buds.state.left = Battery(100, True)  # stale value from before
+    w = ControlWindow(buds)
+    w.refresh()
+    assert w.left_card.level.text() == "–"
+
+
 def test_wear_state_push(qapp):
     buds = Buds()
     buds.link.reply = lambda *a, **k: None

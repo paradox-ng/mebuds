@@ -150,7 +150,17 @@ class Buds(QObject):
             self._refresh.start(REFRESH_MS)
         elif s == "disconnected":
             self._refresh.stop()
+            self._forget_live_state()
         self.changed.emit()
+
+    def _forget_live_state(self):
+        """Batteries and settings are only known while connected. Name,
+        model, firmware and serial stay, since they don't change."""
+        self.state.left = Battery()
+        self.state.right = Battery()
+        self.state.case = Battery()
+        self.state.configs.clear()
+        self.state.wear_detection = None
 
     def _on_link_failed(self, reason: str):
         self.state.error = reason

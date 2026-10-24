@@ -411,11 +411,19 @@ class ControlWindow(QWidget):
         self.status.setToolTip(s.error)
 
         wear = s.wear()
-        self.left_card.set_battery(s.left, self._where(wear["left_in_ear"], wear["left_in_case"], s))
-        self.right_card.set_battery(s.right, self._where(wear["right_in_ear"], wear["right_in_case"], s))
+        unknown = Battery()
+        self.left_card.set_battery(
+            s.left if s.ready else unknown,
+            self._where(wear["left_in_ear"], wear["left_in_case"], s),
+        )
+        self.right_card.set_battery(
+            s.right if s.ready else unknown,
+            self._where(wear["right_in_ear"], wear["right_in_case"], s),
+        )
         # The buds only know the case's charge while one of them sits in it.
         self.case_card.set_battery(
-            s.case, "" if s.case.level is not None or not s.ready else "Put a bud in to read"
+            s.case if s.ready else unknown,
+            "" if s.case.level is not None or not s.ready else "Put a bud in to read",
         )
 
         # Sound
