@@ -8,20 +8,13 @@ every few seconds costs next to nothing.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
 
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusMessage, QDBusVariant
 
+from .backend import POLL_MS, BudsDevice
+
 XIAOMI_SPP_UUID = "0000fd2d-0000-1000-8000-00805f9b34fb"
-POLL_MS = 3000
-
-
-@dataclass(frozen=True)
-class BudsDevice:
-    address: str
-    name: str
-    connected: bool
 
 
 class BluezWatcher(QObject):

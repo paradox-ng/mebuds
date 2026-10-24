@@ -14,7 +14,8 @@ from typing import Callable
 
 from PySide6.QtCore import QObject, QSocketNotifier, QTimer, Signal
 
-from . import auth, sdp
+from . import auth
+from .backend import connect_control_channel
 from .protocol import (
     OP_AUTH_CHECK,
     OP_AUTH_SEND_CALC_RESULT,
@@ -24,7 +25,6 @@ from .protocol import (
 
 log = logging.getLogger(__name__)
 
-SPP_MIUI_UUID16 = 0xFD2D
 AUTH_TIMEOUT_MS = 6000
 DEFAULT_TIMEOUT_MS = 2500
 
@@ -74,14 +74,7 @@ class Link(QObject):
 
     def _connect_worker(self, address: str):
         try:
-            channel = sdp.rfcomm_channel(address, SPP_MIUI_UUID16)
-            if channel is None:
-                raise OSError("device has no Xiaomi (FD2D) RFCOMM service")
-            sock = socket.socket(
-                socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM
-            )
-            sock.settimeout(10)
-            sock.connect((address, channel))
+            sock = connect_control_channel(address)
             sock.setblocking(False)
             self._socketReady.emit(sock, "")
         except OSError as exc:

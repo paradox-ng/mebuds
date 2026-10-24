@@ -8,7 +8,7 @@ from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from . import features as F
-from .bluez import BluezWatcher, BudsDevice
+from .backend import BudsDevice, make_watcher
 from .device import Battery, Buds
 from .icons import app_icon, tray_icon
 from .window import ControlWindow
@@ -60,7 +60,7 @@ class App:
         self.retry.setSingleShot(True)
         self.retry.timeout.connect(self._ensure_link)
 
-        self.bluez = BluezWatcher()
+        self.bluez = make_watcher()
         self.bluez.devicesChanged.connect(self._on_devices)
         self.bluez.start()
         self._update_tray()
