@@ -270,7 +270,7 @@ class Buds(QObject):
         def done(p: Packet | None):
             ok = p is not None and p.status == 0
             if not ok and not quiet:
-                self.commandFailed.emit(f"Setting {cfg} was rejected")
+                self.commandFailed.emit(self.tr("The earbuds rejected that change."))
             if on_done:
                 on_done(ok)
 
@@ -316,6 +316,6 @@ class Buds(QObject):
                 self.state.wear_detection = on
                 self.changed.emit()
             else:
-                self.commandFailed.emit("Wear detection change was rejected")
+                self.commandFailed.emit(self.tr("The earbuds rejected that change."))
 
         self.link.request(OP_SET_TARGET_INFO, data, done)

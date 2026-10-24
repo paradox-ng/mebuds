@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
+
 XIAOMI_VID = 0x2717
 
 # Device config IDs (GetDeviceConfig 0xF3 / SetDeviceConfig 0xF2 / Notify 0xF4)
@@ -45,48 +47,70 @@ GESTURE_SINGLE_TAP = 4
 GESTURE_SLIDE = 5
 
 GESTURE_NAMES = {
-    GESTURE_SINGLE_TAP: "Single tap",
-    GESTURE_DOUBLE_TAP: "Double tap",
-    GESTURE_TRIPLE_TAP: "Triple tap",
-    GESTURE_LONG_PRESS: "Long press",
-    GESTURE_SLIDE: "Slide",
+    GESTURE_SINGLE_TAP: QT_TRANSLATE_NOOP("features", "Single tap"),
+    GESTURE_DOUBLE_TAP: QT_TRANSLATE_NOOP("features", "Double tap"),
+    GESTURE_TRIPLE_TAP: QT_TRANSLATE_NOOP("features", "Triple tap"),
+    GESTURE_LONG_PRESS: QT_TRANSLATE_NOOP("features", "Long press"),
+    GESTURE_SLIDE: QT_TRANSLATE_NOOP("features", "Slide"),
 }
 
 ACTION_NAMES = {
-    0: "Voice assistant",
-    1: "Play / pause",
-    2: "Previous song",
-    3: "Next song",
-    4: "Volume up",
-    5: "Volume down",
-    6: "Noise control",
-    7: "Game mode",
-    8: "None",
-    9: "Take photo",
-    10: "Record",
-    11: "Volume",
-    12: "Translate",
-    13: "Previous / next song",
+    0: QT_TRANSLATE_NOOP("features", "Voice assistant"),
+    1: QT_TRANSLATE_NOOP("features", "Play / pause"),
+    2: QT_TRANSLATE_NOOP("features", "Previous song"),
+    3: QT_TRANSLATE_NOOP("features", "Next song"),
+    4: QT_TRANSLATE_NOOP("features", "Volume up"),
+    5: QT_TRANSLATE_NOOP("features", "Volume down"),
+    6: QT_TRANSLATE_NOOP("features", "Noise control"),
+    7: QT_TRANSLATE_NOOP("features", "Game mode"),
+    8: QT_TRANSLATE_NOOP("features", "None"),
+    9: QT_TRANSLATE_NOOP("features", "Take photo"),
+    10: QT_TRANSLATE_NOOP("features", "Record"),
+    11: QT_TRANSLATE_NOOP("features", "Volume"),
+    12: QT_TRANSLATE_NOOP("features", "Translate"),
+    13: QT_TRANSLATE_NOOP("features", "Previous / next song"),
 }
 ACTION_NONE = 8
 
 EQ_PRESET_NAMES = {
-    0: "Balanced",
-    1: "Enhance voice",
-    5: "Enhance bass",
-    6: "Enhance treble",
-    7: "Boost volume",
-    10: "Custom",
-    11: "Classic",
-    12: "Legendary",
-    13: "Soothing",
-    14: "Harman",
-    15: "Harman Master",
-    16: "Standard",
-    17: "Outdoor",
-    18: "Underwater",
+    0: QT_TRANSLATE_NOOP("features", "Balanced"),
+    1: QT_TRANSLATE_NOOP("features", "Enhance voice"),
+    5: QT_TRANSLATE_NOOP("features", "Enhance bass"),
+    6: QT_TRANSLATE_NOOP("features", "Enhance treble"),
+    7: QT_TRANSLATE_NOOP("features", "Boost volume"),
+    10: QT_TRANSLATE_NOOP("features", "Custom"),
+    11: QT_TRANSLATE_NOOP("features", "Classic"),
+    12: QT_TRANSLATE_NOOP("features", "Legendary"),
+    13: QT_TRANSLATE_NOOP("features", "Soothing"),
+    14: QT_TRANSLATE_NOOP("features", "Harman"),
+    15: QT_TRANSLATE_NOOP("features", "Harman Master"),
+    16: QT_TRANSLATE_NOOP("features", "Standard"),
+    17: QT_TRANSLATE_NOOP("features", "Outdoor"),
+    18: QT_TRANSLATE_NOOP("features", "Underwater"),
 }
 EQ_CUSTOM = 10
+
+
+def _tr(text: str) -> str:
+    return QCoreApplication.translate("features", text)
+
+
+def gesture_name(gesture: int) -> str:
+    name = GESTURE_NAMES.get(gesture)
+    return _tr(name) if name else QCoreApplication.translate(
+        "features", "Gesture {n}").format(n=gesture)
+
+
+def action_name(action: int) -> str:
+    name = ACTION_NAMES.get(action)
+    return _tr(name) if name else QCoreApplication.translate(
+        "features", "Action {n}").format(n=action)
+
+
+def preset_name(preset: int) -> str:
+    name = EQ_PRESET_NAMES.get(preset)
+    return _tr(name) if name else QCoreApplication.translate(
+        "features", "Preset {n}").format(n=preset)
 
 FIND_STOP, FIND_RING = 0, 1
 SIDE_LEFT, SIDE_RIGHT, SIDE_BOTH = 1, 2, 3
