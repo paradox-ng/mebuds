@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 
 from PySide6.QtCore import QObject, QTimer, Signal
-from PySide6.QtDBus import QDBusConnection, QDBusInterface
+from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusMessage, QDBusVariant
 
 XIAOMI_SPP_UUID = "0000fd2d-0000-1000-8000-00805f9b34fb"
 POLL_MS = 3000
@@ -85,6 +85,22 @@ class BluezWatcher(QObject):
                     )
                 )
         return found
+
+    def rename(self, address: str, alias: str) -> bool:
+        """Set BlueZ's local alias, which is all the official app's "rename"
+        does on a phone too (the buds don't store a name)."""
+        for adapter in self._children("/org/bluez"):
+            path = f"{adapter}/dev_{address.replace(':', '_')}"
+            iface = QDBusInterface(
+                "org.bluez", path, "org.freedesktop.DBus.Properties", self._bus
+            )
+            reply = iface.call(
+                "Set", "org.bluez.Device1", "Alias", QDBusVariant(alias)
+            )
+            if reply.type() != QDBusMessage.ErrorMessage:
+                self.poll()
+                return True
+        return False
 
     def poll(self):
         devices = self.scan()
