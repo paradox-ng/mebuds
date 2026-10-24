@@ -26,3 +26,6 @@ mebuds = ["data/*.svg"]
 
 [tool.setuptools.dynamic]
 version = {attr = "mebuds.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
