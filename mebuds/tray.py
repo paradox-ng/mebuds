@@ -119,7 +119,7 @@ class App:
                 tray_icon(s.left.level, s.right.level, s.left.charging, s.right.charging)
             )
             parts = [_battery_text(lbl, b) for lbl, b in
-                     (("L", s.left), ("R", s.right), ("Case", s.case))]
+                     (("L", s.left), ("Case", s.case), ("R", s.right))]
             self.tray.setToolTip(f"{name}\n" + "  ·  ".join(p for p in parts if p))
         else:
             self.tray.setIcon(tray_icon(None, None, connected=False))
@@ -143,7 +143,7 @@ class App:
         header.setEnabled(False)
         self.menu.addAction(header)
         if s.ready:
-            for label, b in (("Left", s.left), ("Right", s.right), ("Case", s.case)):
+            for label, b in (("Left", s.left), ("Case", s.case), ("Right", s.right)):
                 text = _battery_text(label, b)
                 if text:
                     a = QAction(text, self.menu)
