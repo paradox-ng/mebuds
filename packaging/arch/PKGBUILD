@@ -1,6 +1,6 @@
 # Maintainer: Paradox
 pkgname=mebuds
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Desktop application for controlling Xiaomi earbuds"
 arch=('any')
@@ -10,7 +10,7 @@ license=('GPL-3.0-or-later')
 depends=('python' 'pyside6' 'bluez')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('975d6ee8816deb9fca5c5e9cad4bfdc385ce702d96dbed246efb22cb7ee857f4')
+sha256sums=('SKIP')
 
 build() {
   cd "$pkgname-$pkgver"
