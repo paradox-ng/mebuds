@@ -10,7 +10,7 @@ license=('GPL-3.0-or-later')
 depends=('python' 'pyside6' 'bluez')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('975d6ee8816deb9fca5c5e9cad4bfdc385ce702d96dbed246efb22cb7ee857f4')
 
 build() {
   cd "$pkgname-$pkgver"
