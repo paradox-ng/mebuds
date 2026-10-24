@@ -103,3 +103,9 @@ def test_custom_eq_parse_and_save():
     eq.bands[0] = (62, -3)
     assert eq.save_value()[:7] == bytes([1, 10, 1, 1, 1, 0, 10])
     assert eq.save_value()[7:10] == bytes([0, 62, 0x83])
+
+
+def test_buds_8_active_long_press_options():
+    model = F.model_for(0x2717, 0x50E2)
+    assert model.gestures[F.GESTURE_LONG_PRESS] == (F.ACTION_NONE, 0)
+    assert F.ACTION_NAMES[0] == "Voice assistant"

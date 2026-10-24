@@ -138,9 +138,7 @@ MODELS: dict[int, Model] = {
             GESTURE_SINGLE_TAP: _TAP_ACTIONS,
             GESTURE_DOUBLE_TAP: _TAP_ACTIONS,
             GESTURE_TRIPLE_TAP: _TAP_ACTIONS,
-            # TODO: the app opens a separate page for press-and-hold; its
-            # options haven't been checked yet.
-            GESTURE_LONG_PRESS: _TAP_ACTIONS,
+            GESTURE_LONG_PRESS: (ACTION_NONE, 0),  # none, voice assistant
         },
         dual_connection=True,
         find_buds=True,
